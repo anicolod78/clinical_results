@@ -1,0 +1,74 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ---------------------------------------------------------------------------
+# DATI SANITARI — NON VERSIONARE
+# ---------------------------------------------------------------------------
+# La cartella esempi/ contiene referti reali con dati personali e sanitari
+# (nome, codice fiscale, data di nascita, esiti di laboratorio). Servono per
+# calibrare e verificare il parser in locale, ma non devono finire in un
+# repository, nemmeno privato: una volta nella cronologia di git non si
+# rimuovono più senza riscrivere la storia.
+esempi/
+campioni/
+*.referto.pdf
+
+# ---------------------------------------------------------------------------
+# CHIAVE DI FIRMA — NON VERSIONARE
+# ---------------------------------------------------------------------------
+# key.properties contiene la password del keystore. Il keystore stesso è
+# tenuto fuori dal progetto, ma queste regole valgono comunque nel caso
+# venisse copiato qui per errore.
+#
+# Perdere la chiave significa non poter più aggiornare l'app installata: si
+# potrebbe solo disinstallarla, e con essa sparirebbero i dati e la voce del
+# portachiavi che apre il database cifrato.
+android/key.properties
+*.jks
+*.keystore
+
+# Impostazioni locali dell'ambiente, specifiche della macchina.
+.claude/settings.local.json

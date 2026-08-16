@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-statico",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tool/serve_web.js", "8090"],
+      "port": 8090
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "8080",
+        "--web-hostname",
+        "127.0.0.1"
+      ],
+      "port": 8080
+    }
+  ]
+}
