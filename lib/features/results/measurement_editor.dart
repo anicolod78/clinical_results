@@ -17,6 +17,7 @@ import '../../app/providers.dart';
 import '../../core/db/repositories/series_repository.dart';
 import '../parsing/plausibility.dart';
 import '../parsing/text_normalizer.dart';
+import 'stored_value_check.dart';
 
 Future<void> showMeasurementEditor({
   required BuildContext context,
@@ -45,6 +46,9 @@ class _MeasurementEditor extends StatefulWidget {
   State<_MeasurementEditor> createState() => _MeasurementEditorState();
 }
 
+String _fmt(double v) =>
+    v == v.roundToDouble() && v.abs() < 1e9 ? v.toStringAsFixed(0) : '$v';
+
 class _MeasurementEditorState extends State<_MeasurementEditor> {
   late final TextEditingController _value;
   bool _working = false;
@@ -63,14 +67,8 @@ class _MeasurementEditorState extends State<_MeasurementEditor> {
     super.dispose();
   }
 
-  ImplausibleValue? get _suspect => Plausibility.check(
-        rawName: widget.series.displayName,
-        value: widget.point.value,
-        unit: widget.series.unit,
-        refLow: widget.point.refLow,
-        refHigh: widget.point.refHigh,
-        isDesirable: widget.point.isDesirable,
-      );
+  ImplausibleValue? get _suspect =>
+      checkStoredPoint(widget.series, widget.point);
 
   Future<void> _save() async {
     final parsed = TextNormalizer.parseNumber(_value.text);
@@ -126,6 +124,9 @@ class _MeasurementEditorState extends State<_MeasurementEditor> {
     final p = widget.point;
     final suspect = _suspect;
     final reference = p.referenceLabel;
+    final inferred = (p.refLow == null && p.refHigh == null)
+        ? widget.series.typicalReference
+        : null;
 
     return AlertDialog(
       title: Text(widget.series.displayName),
@@ -143,6 +144,18 @@ class _MeasurementEditorState extends State<_MeasurementEditor> {
             if (reference.isNotEmpty)
               Text(
                 'Riferimento sul referto: $reference',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else if (inferred != null)
+              // Va detto da dove viene: giudicare un valore con l'intervallo
+              // di un altro prelievo è un'inferenza, e chi corregge un dato
+              // clinico ha diritto di sapere su cosa si sta basando.
+              Text(
+                'Il referto non riportava l\'intervallo. Dalle altre misure '
+                'di questo esame risulta ${_fmt(inferred.low)} - '
+                '${_fmt(inferred.high)}.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

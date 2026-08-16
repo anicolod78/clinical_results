@@ -220,6 +220,19 @@ sopra richiede una conferma esplicita. Lo stesso controllo si applica a quanto
 è già in archivio: in tabella il valore sospetto è sottolineato e toccandolo
 si corregge o si elimina la singola misura, senza reimportare il referto.
 
+**Sulle misure archiviate l'intervallo si può recuperare dalla serie.** Tutte
+e tre le regole ne hanno bisogno, e il primo tentativo sull'archivio reale ha
+mancato proprio il valore che aveva originato il lavoro: quella misura non
+aveva alcun riferimento, perché il riconoscimento da foto aveva perso la
+colonna dell'intervallo sulla stessa riga in cui aveva sbagliato il valore.
+Sono lo stesso difetto di lettura, e insieme rendevano il dato impossibile da
+verificare. Quando l'intervallo manca del tutto si prende quindi la coppia più
+frequente fra le altre misure della stessa serie — non la più recente, così un
+singolo referto letto male non detta il riferimento a tutti gli altri. Non si
+mescola mai un estremo letto con uno inferito, e l'intervallo della misura
+stessa ha sempre la precedenza. Chi apre la correzione vede scritto da dove
+viene il riferimento usato.
+
 **Data del prelievo.** Si preferisce sempre la data del prelievo a quella di
 produzione del referto: possono differire di giorni e usare la seconda
 sfalserebbe l'asse temporale. Quando il documento non la contiene, la

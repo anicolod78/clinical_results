@@ -11,7 +11,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme.dart';
 import '../../core/db/repositories/series_repository.dart';
 import '../parsing/models.dart';
-import '../parsing/plausibility.dart';
+import 'stored_value_check.dart';
 
 class ResultsTableView extends StatefulWidget {
   const ResultsTableView({
@@ -314,14 +314,7 @@ class _ValueCell extends StatelessWidget {
     // Lo stesso controllo della revisione, applicato a ciò che è già in
     // archivio: un errore sfuggito allora resta visibile finché non viene
     // corretto, invece di sedimentare come se fosse un dato buono.
-    final suspect = Plausibility.check(
-      rawName: series.displayName,
-      value: p.value,
-      unit: series.unit,
-      refLow: p.refLow,
-      refHigh: p.refHigh,
-      isDesirable: p.isDesirable,
-    );
+    final suspect = checkStoredPoint(series, p);
 
     if (suspect != null) {
       return Semantics(

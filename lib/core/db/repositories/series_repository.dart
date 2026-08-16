@@ -109,6 +109,38 @@ class AnalyteSeries {
   }
 
   String get label => unit.isEmpty ? displayName : '$displayName ($unit)';
+
+  /// Intervallo di riferimento ricorrente fra le misure della serie.
+  ///
+  /// Serve alle misure che ne sono prive. Il riconoscimento da foto perde
+  /// spesso proprio la colonna dell'intervallo, e la perde sulla stessa riga
+  /// in cui sbaglia il valore: sono lo stesso difetto di lettura. Senza un
+  /// riferimento non c'è nulla contro cui giudicare la cifra, e l'errore
+  /// resta invisibile proprio dove è più probabile.
+  ///
+  /// L'inferenza regge perché la serie è già definita da analita **e** unità:
+  /// i punti a confronto misurano la stessa cosa nella stessa scala, e gli
+  /// intervalli di laboratorio per un dato esame sono stabili nel tempo. Si
+  /// prende la coppia più frequente, non la più recente, così un singolo
+  /// referto letto male non detta il riferimento a tutti gli altri.
+  ({double low, double high})? get typicalReference {
+    final counts = <({double low, double high}), int>{};
+    for (final p in points) {
+      final low = p.refLow;
+      final high = p.refHigh;
+      if (low == null || high == null || high <= low) continue;
+      if (p.isDesirable) continue;
+      final pair = (low: low, high: high);
+      counts[pair] = (counts[pair] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+
+    var best = counts.entries.first;
+    for (final e in counts.entries) {
+      if (e.value > best.value) best = e;
+    }
+    return best.key;
+  }
 }
 
 /// Dati pronti per la vista tabellare: analiti in riga, prelievi in colonna.

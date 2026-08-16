@@ -88,7 +88,7 @@ class Plausibility {
     if (v < 0 && refLow != null && refLow >= 0) {
       return const ImplausibleValue(
         kind: ImplausibilityKind.negative,
-        message: 'Il valore è negativo, ma il riferimento del referto non '
+        message: 'Il valore è negativo, ma l\'intervallo di riferimento non '
             'ammette valori sotto lo zero. Potrebbe essere un trattino letto '
             'come segno meno.',
       );
@@ -108,8 +108,8 @@ class Plausibility {
         return ImplausibleValue(
           kind: ImplausibilityKind.decimalShift,
           suggested: shifted,
-          message: 'Fuori scala rispetto al riferimento del referto, ma con la '
-              'virgola spostata di una cifra rientrerebbe: '
+          message: 'Fuori scala rispetto all\'intervallo di riferimento, ma '
+              'con la virgola spostata di una cifra rientrerebbe: '
               '${_format(shifted)} invece di ${_format(v)}.',
         );
       }
@@ -118,8 +118,8 @@ class Plausibility {
     if (percentBounded && v > 100) {
       return ImplausibleValue(
         kind: ImplausibilityKind.impossiblePercentage,
-        message: 'Una percentuale non può superare il 100 % quando il '
-            'riferimento del referto si ferma a ${_format(refHigh)}.',
+        message: 'Una percentuale non può superare il 100 % quando '
+            'l\'intervallo di riferimento si ferma a ${_format(refHigh)}.',
       );
     }
 
