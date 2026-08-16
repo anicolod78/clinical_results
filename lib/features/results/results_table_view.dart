@@ -348,9 +348,14 @@ class _ValueCell extends StatelessWidget {
             p.display,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: p.flag == ValueFlag.normal ? null : palette.of(p.flag),
-              fontWeight: p.flag == ValueFlag.high || p.flag == ValueFlag.low
-                  ? FontWeight.w700
-                  : null,
+              fontWeight: switch (p.flag) {
+                ValueFlag.high ||
+                ValueFlag.low ||
+                ValueFlag.aboveTarget ||
+                ValueFlag.belowTarget =>
+                  FontWeight.w700,
+                _ => null,
+              },
             ),
           ),
           if (flagIcon(p.flag) != null) ...[

@@ -47,8 +47,15 @@ class MeasurementPoint {
 
   ValueFlag get flag {
     final v = value;
-    if (v == null || refKind == StoredReferenceKind.none || isDesirable) {
+    if (v == null || refKind == StoredReferenceKind.none) {
       return ValueFlag.unknown;
+    }
+    // Un obiettivo terapeutico superato va mostrato, ma con uno stato suo:
+    // non è un esito fuori norma di laboratorio.
+    if (isDesirable) {
+      if (refHigh != null && v > refHigh!) return ValueFlag.aboveTarget;
+      if (refLow != null && v < refLow!) return ValueFlag.belowTarget;
+      return ValueFlag.normal;
     }
     if (refLow != null && v < refLow!) return ValueFlag.low;
     if (refHigh != null && v > refHigh!) return ValueFlag.high;

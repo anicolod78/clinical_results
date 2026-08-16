@@ -70,7 +70,12 @@ class TrendChart extends StatelessWidget {
                 HorizontalRangeAnnotation(
                   y1: reference.refLow ?? bounds.min,
                   y2: reference.refHigh ?? bounds.max,
-                  color: palette.normal.withValues(alpha: 0.10),
+                  // La fascia di un obiettivo terapeutico non è la fascia di
+                  // normalità di un laboratorio: dipingerle uguali farebbe
+                  // leggere come "nella norma" ciò che è "entro l'obiettivo".
+                  color: reference.isDesirable
+                      ? palette.target.withValues(alpha: 0.10)
+                      : palette.normal.withValues(alpha: 0.10),
                 ),
             ],
           ),

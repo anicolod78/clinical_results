@@ -113,9 +113,29 @@ CHIMICA CLINICAS−Colesterolo
       expect(r.analytes.single.reference.kind, ReferenceKind.desirableUpper);
       expect(
         r.analytes.single.flag,
-        ValueFlag.unknown,
-        reason: 'un valore desiderabile è un obiettivo, non un limite di normalità',
+        ValueFlag.aboveTarget,
+        reason: 'superare un obiettivo va mostrato: la soglia è stampata sul '
+            'referto e il grafico la disegna',
       );
+      expect(
+        r.analytes.single.flag,
+        isNot(ValueFlag.high),
+        reason: 'ma resta uno stato distinto dal fuori intervallo: un valore '
+            'desiderabile è un obiettivo terapeutico, non un limite di '
+            'normalità di laboratorio',
+      );
+    });
+
+    test('riconosce anche un obiettivo mancato per difetto', () {
+      // L'HDL ha l'obiettivo rovesciato: si desidera stare sopra la soglia.
+      const text = '''
+Esame Risultato Unità di misura Intervalli di riferimento
+S−Colesterolo HDL32 mg/dL Valore desiderabile: >40
+''';
+      final r = parser.parse(text);
+      expect(r.analytes.single.reference.kind, ReferenceKind.desirableLower);
+      expect(r.analytes.single.flag, ValueFlag.belowTarget);
+      expect(r.analytes.single.flag, isNot(ValueFlag.low));
     });
 
     test('non scambia una nota del laboratorio per un esame', () {

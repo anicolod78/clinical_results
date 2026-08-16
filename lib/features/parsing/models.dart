@@ -82,7 +82,14 @@ class ReferenceRange {
 }
 
 /// Posizione del valore rispetto al riferimento.
-enum ValueFlag { normal, low, high, unknown }
+///
+/// Gli stati "obiettivo" sono separati da quelli "fuori riferimento" perché
+/// dicono cose diverse. Un intervallo di laboratorio descrive che cosa si
+/// osserva nelle persone sane; un valore desiderabile è una soglia terapeutica
+/// che dipende dal rischio cardiovascolare complessivo. Trigliceridi a 275 con
+/// obiettivo `< 150` meritano di essere visti, ma non sono "fuori norma" nel
+/// senso in cui lo è un potassio fuori intervallo.
+enum ValueFlag { normal, low, high, aboveTarget, belowTarget, unknown }
 
 /// Un singolo analita estratto dal referto.
 class ParsedAnalyte {
@@ -138,13 +145,20 @@ class ParsedAnalyte {
 
   /// Posizione rispetto al riferimento.
   ///
-  /// I riferimenti "desiderabili" non marcano il valore come patologico:
-  /// sono obiettivi, non limiti di normalità.
+  /// I riferimenti "desiderabili" non marcano il valore come patologico — sono
+  /// obiettivi, non limiti di normalità — ma neppure vengono ignorati: hanno
+  /// uno stato proprio, così superarli resta visibile senza essere confuso con
+  /// un esito fuori norma.
   ValueFlag get flag {
     final v = value;
-    if (v == null || reference.isEmpty || reference.isDesirable) return ValueFlag.unknown;
+    if (v == null || reference.isEmpty) return ValueFlag.unknown;
     final low = reference.low;
     final high = reference.high;
+    if (reference.isDesirable) {
+      if (high != null && v > high) return ValueFlag.aboveTarget;
+      if (low != null && v < low) return ValueFlag.belowTarget;
+      return ValueFlag.normal;
+    }
     if (low != null && v < low) return ValueFlag.low;
     if (high != null && v > high) return ValueFlag.high;
     return ValueFlag.normal;

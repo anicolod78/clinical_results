@@ -16,18 +16,25 @@ class FlagPalette {
     required this.high,
     required this.low,
     required this.normal,
+    required this.target,
     required this.unknown,
   });
 
   final Color high;
   final Color low;
   final Color normal;
+
+  /// Obiettivo terapeutico mancato: distinto dal fuori intervallo, perché
+  /// mostrarli con lo stesso rosso direbbe una cosa clinicamente diversa.
+  final Color target;
+
   final Color unknown;
 
   Color of(ValueFlag flag) => switch (flag) {
     ValueFlag.high => high,
     ValueFlag.low => low,
     ValueFlag.normal => normal,
+    ValueFlag.aboveTarget || ValueFlag.belowTarget => target,
     ValueFlag.unknown => unknown,
   };
 
@@ -35,6 +42,7 @@ class FlagPalette {
     high: Color(0xFFB3261E),
     low: Color(0xFF00629E),
     normal: Color(0xFF1B6E3C),
+    target: Color(0xFF8A5000),
     unknown: Color(0xFF5F6368),
   );
 
@@ -42,14 +50,20 @@ class FlagPalette {
     high: Color(0xFFFFB4AB),
     low: Color(0xFF8ECDFF),
     normal: Color(0xFF7EDBA0),
+    target: Color(0xFFFFB77C),
     unknown: Color(0xFFBFC5CB),
   );
 }
 
 /// Simbolo che accompagna il colore.
+///
+/// La freccia piena segnala il fuori intervallo, il gallone l'obiettivo
+/// mancato: la differenza resta leggibile anche senza distinguere i colori.
 IconData? flagIcon(ValueFlag flag) => switch (flag) {
   ValueFlag.high => Icons.arrow_upward,
   ValueFlag.low => Icons.arrow_downward,
+  ValueFlag.aboveTarget => Icons.keyboard_arrow_up,
+  ValueFlag.belowTarget => Icons.keyboard_arrow_down,
   ValueFlag.normal => null,
   ValueFlag.unknown => null,
 };
@@ -57,6 +71,8 @@ IconData? flagIcon(ValueFlag flag) => switch (flag) {
 String flagLabel(ValueFlag flag) => switch (flag) {
   ValueFlag.high => 'sopra il riferimento',
   ValueFlag.low => 'sotto il riferimento',
+  ValueFlag.aboveTarget => 'oltre il valore desiderabile',
+  ValueFlag.belowTarget => 'sotto il valore desiderabile',
   ValueFlag.normal => 'nel riferimento',
   ValueFlag.unknown => 'senza riferimento',
 };

@@ -210,8 +210,7 @@ void main() {
       );
     });
 
-    test('segnala i valori fuori soglia e ignora quelli desiderabili',
-        () async {
+    test('distingue il fuori intervallo dall obiettivo mancato', () async {
       final patientId = await patients.create(fullName: 'Paziente Prova');
       await importSample(patientId, '2019-09-20 analisi ves e pcr.pdf');
       await importSample(patientId, '82323785.pdf');
@@ -224,8 +223,11 @@ void main() {
 
       final colesterolo =
           table.series.firstWhere((s) => s.displayName == 'Colesterolo totale');
-      expect(colesterolo.latest!.flag, ValueFlag.unknown,
-          reason: 'un obiettivo desiderabile non è un limite di normalità');
+      expect(colesterolo.latest!.flag, ValueFlag.aboveTarget,
+          reason: 'la soglia è stampata sul referto: superarla va mostrato');
+      expect(colesterolo.latest!.flag, isNot(ValueFlag.high),
+          reason: 'ma con uno stato proprio, perché un obiettivo terapeutico '
+              'non è un limite di normalità di laboratorio');
       expect(colesterolo.latest!.isDesirable, isTrue);
     });
 

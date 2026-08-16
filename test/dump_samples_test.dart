@@ -41,6 +41,8 @@ void main() {
         final flag = switch (a.flag) {
           ValueFlag.high => 'ALTO',
           ValueFlag.low => 'BASSO',
+          ValueFlag.aboveTarget => 'oltre obiettivo',
+          ValueFlag.belowTarget => 'sotto obiettivo',
           ValueFlag.normal => '',
           ValueFlag.unknown => '?',
         };

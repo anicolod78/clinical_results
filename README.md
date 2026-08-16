@@ -170,9 +170,16 @@ Due scelte non ovvie:
 - **L'unità fa parte dell'identità della serie.** Sui referti `Neutrofili`
   compare sia in `%` sia in `x10^9/L`: unirli produrrebbe un grafico privo di
   senso clinico. La chiave di confronto è quindi nome canonico + unità.
-- **Un "valore desiderabile" non è un limite di normalità.** Il colesterolo
-  con obiettivo `<190` non viene marcato come patologico: è un obiettivo, non
-  un intervallo di riferimento di laboratorio.
+- **Un "valore desiderabile" non è un limite di normalità**, ma non per questo
+  va nascosto. Un intervallo di laboratorio descrive che cosa si osserva nelle
+  persone sane; un obiettivo come `<150` per i trigliceridi è una soglia
+  terapeutica che dipende dal rischio cardiovascolare complessivo. Superarla
+  ha quindi uno stato proprio — colore ambra e gallone, distinti dal rosso e
+  dalla freccia piena del fuori intervallo — invece di non essere segnalata
+  affatto. La prima versione la ignorava del tutto, e il risultato era
+  incoerente: il grafico disegnava la soglia e poi si comportava come se non
+  esistesse. Per la stessa ragione la fascia di un obiettivo sul grafico è
+  colorata diversamente da quella di un intervallo di riferimento.
 
 ### Valori implausibili
 
