@@ -11,16 +11,22 @@ import 'package:intl/intl.dart';
 import '../../app/theme.dart';
 import '../../core/db/repositories/series_repository.dart';
 import '../parsing/models.dart';
+import '../parsing/plausibility.dart';
 
 class ResultsTableView extends StatefulWidget {
   const ResultsTableView({
     super.key,
     required this.table,
     this.onSelectSeries,
+    this.onCorrectPoint,
   });
 
   final ResultsTable table;
   final ValueChanged<AnalyteSeries>? onSelectSeries;
+
+  /// Correzione di una singola misura già archiviata.
+  final void Function(AnalyteSeries series, MeasurementPoint point)?
+      onCorrectPoint;
 
   @override
   State<ResultsTableView> createState() => _ResultsTableViewState();
@@ -162,9 +168,11 @@ class _ResultsTableViewState extends State<ResultsTableView> {
                               children: [
                                 for (final date in dates)
                                   _ValueCell(
+                                    series: s,
                                     point: table.at(s, date),
                                     width: _cellWidth,
                                     height: _rowHeight,
+                                    onCorrect: widget.onCorrectPoint,
                                   ),
                               ],
                             ),
@@ -255,14 +263,18 @@ class _NameCell extends StatelessWidget {
 
 class _ValueCell extends StatelessWidget {
   const _ValueCell({
+    required this.series,
     required this.point,
     required this.width,
     required this.height,
+    this.onCorrect,
   });
 
+  final AnalyteSeries series;
   final MeasurementPoint? point;
   final double width;
   final double height;
+  final void Function(AnalyteSeries series, MeasurementPoint point)? onCorrect;
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +282,7 @@ class _ValueCell extends StatelessWidget {
     final palette = AppTheme.paletteOf(context);
     final p = point;
 
-    return Container(
+    final cell = Container(
       width: width,
       height: height,
       alignment: Alignment.center,
@@ -286,30 +298,74 @@ class _ValueCell extends StatelessWidget {
                 color: theme.colorScheme.outline,
               ),
             )
-          : Semantics(
-              label: '${p.display} ${flagLabel(p.flag)}',
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    p.display,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: p.flag == ValueFlag.normal
-                          ? null
-                          : palette.of(p.flag),
-                      fontWeight: p.flag == ValueFlag.high ||
-                              p.flag == ValueFlag.low
-                          ? FontWeight.w700
-                          : null,
-                    ),
-                  ),
-                  if (flagIcon(p.flag) != null) ...[
-                    const SizedBox(width: 2),
-                    Icon(flagIcon(p.flag), size: 13, color: palette.of(p.flag)),
-                  ],
-                ],
+          : _content(context, p, theme, palette),
+    );
+
+    if (p == null || onCorrect == null) return cell;
+    return InkWell(onTap: () => onCorrect!(series, p), child: cell);
+  }
+
+  Widget _content(
+    BuildContext context,
+    MeasurementPoint p,
+    ThemeData theme,
+    FlagPalette palette,
+  ) {
+    // Lo stesso controllo della revisione, applicato a ciò che è già in
+    // archivio: un errore sfuggito allora resta visibile finché non viene
+    // corretto, invece di sedimentare come se fosse un dato buono.
+    final suspect = Plausibility.check(
+      rawName: series.displayName,
+      value: p.value,
+      unit: series.unit,
+      refLow: p.refLow,
+      refHigh: p.refHigh,
+      isDesirable: p.isDesirable,
+    );
+
+    if (suspect != null) {
+      return Semantics(
+        label: '${p.display}, valore sospetto',
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              p.display,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.tertiary,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.underline,
+                decorationStyle: TextDecorationStyle.dotted,
               ),
             ),
+            const SizedBox(width: 2),
+            Icon(Icons.rule_outlined,
+                size: 13, color: theme.colorScheme.tertiary),
+          ],
+        ),
+      );
+    }
+
+    return Semantics(
+      label: '${p.display} ${flagLabel(p.flag)}',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            p.display,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: p.flag == ValueFlag.normal ? null : palette.of(p.flag),
+              fontWeight: p.flag == ValueFlag.high || p.flag == ValueFlag.low
+                  ? FontWeight.w700
+                  : null,
+            ),
+          ),
+          if (flagIcon(p.flag) != null) ...[
+            const SizedBox(width: 2),
+            Icon(flagIcon(p.flag), size: 13, color: palette.of(p.flag)),
+          ],
+        ],
+      ),
     );
   }
 }

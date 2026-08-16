@@ -20,6 +20,7 @@ import '../../app/theme.dart';
 import '../../core/db/repositories/report_repository.dart';
 import '../import/import_service.dart';
 import '../parsing/models.dart';
+import '../parsing/plausibility.dart';
 import '../parsing/text_normalizer.dart';
 
 class ReviewScreen extends ConsumerStatefulWidget {
@@ -100,9 +101,38 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     if (edited != null) setState(() => _analytes[index] = edited);
   }
 
+  /// Applica la correzione proposta dal controllo di plausibilità.
+  void _applySuggestion(int index, double suggested) {
+    setState(() {
+      _analytes[index] = _analytes[index].copyWith(value: suggested);
+    });
+  }
+
+  /// Voci sospette fra quelle effettivamente selezionate per il salvataggio.
+  List<({ParsedAnalyte analyte, ImplausibleValue warning})> get _suspicious {
+    final found = <({ParsedAnalyte analyte, ImplausibleValue warning})>[];
+    for (var i = 0; i < _analytes.length; i++) {
+      if (!_included.contains(i)) continue;
+      final w = Plausibility.checkAnalyte(_analytes[i]);
+      if (w != null) found.add((analyte: _analytes[i], warning: w));
+    }
+    return found;
+  }
+
   Future<void> _save() async {
     final date = _examDate;
     if (date == null) return;
+
+    // Il salvataggio non viene impedito: esistono valori legittimamente
+    // estremi, e un blocco costringerebbe a falsificare il dato per aggirarlo.
+    // Ma passarci sopra dev'essere una scelta consapevole, non un tocco
+    // distratto: chi rilegge lo storico fra sei mesi non avrà più modo di
+    // accorgersi dell'errore.
+    final suspicious = _suspicious;
+    if (suspicious.isNotEmpty) {
+      final proceed = await _confirmSuspicious(suspicious);
+      if (proceed != true) return;
+    }
 
     setState(() => _saving = true);
     final selected = [
@@ -138,10 +168,65 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     }
   }
 
+  Future<bool?> _confirmSuspicious(
+    List<({ParsedAnalyte analyte, ImplausibleValue warning})> suspicious,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          icon: Icon(Icons.rule_outlined, color: theme.colorScheme.tertiary),
+          title: Text(
+            suspicious.length == 1
+                ? 'Un valore sembra sbagliato'
+                : '${suspicious.length} valori sembrano sbagliati',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final s in suspicious) ...[
+                  Text(
+                    '${s.analyte.displayName}: '
+                    '${s.analyte.value} ${s.analyte.unit}'.trim(),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(s.warning.message, style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  'Salvandoli così resteranno nello storico, e più avanti non '
+                  'sarà possibile riconoscerli come errati.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Torna a correggerli'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Salva così'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canSave = _examDate != null && _included.isNotEmpty && !_saving;
+    final suspiciousCount = _suspicious.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -216,6 +301,19 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               patientId: widget.patientId,
               fiscalCode: _report.patient.fiscalCode!,
             ),
+          if (suspiciousCount > 0)
+            _Warning(
+              icon: Icons.rule_outlined,
+              tone: _Tone.warning,
+              title: suspiciousCount == 1
+                  ? 'Un valore sembra sbagliato'
+                  : '$suspiciousCount valori sembrano sbagliati',
+              body: 'Sono segnalati qui sotto. Non è un giudizio clinico: '
+                  'l\'app confronta il valore con l\'intervallo stampato sullo '
+                  'stesso referto e riconosce solo gli errori di lettura, come '
+                  'una virgola persa. Un esame realmente alterato non viene '
+                  'segnalato.',
+            ),
           for (final w in _report.warnings)
             _Warning(
               icon: Icons.info_outline,
@@ -254,6 +352,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             _AnalyteTile(
               analyte: _analytes[i],
               included: _included.contains(i),
+              warning: Plausibility.checkAnalyte(_analytes[i]),
+              onApplySuggestion: (v) => _applySuggestion(i, v),
               onToggle: (v) => setState(() {
                 if (v) {
                   _included.add(i);
@@ -535,6 +635,8 @@ class _AnalyteTile extends StatelessWidget {
     required this.included,
     required this.onToggle,
     required this.onEdit,
+    this.warning,
+    this.onApplySuggestion,
   });
 
   final ParsedAnalyte analyte;
@@ -542,8 +644,62 @@ class _AnalyteTile extends StatelessWidget {
   final ValueChanged<bool> onToggle;
   final VoidCallback onEdit;
 
+  /// Esito del controllo di plausibilità, `null` se non c'è nulla da dire.
+  final ImplausibleValue? warning;
+
+  final ValueChanged<double>? onApplySuggestion;
+
   @override
   Widget build(BuildContext context) {
+    final w = warning;
+    if (w == null) return _tile(context);
+
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.tertiary;
+    final suggested = w.suggested;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: color.withValues(alpha: 0.07),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _tile(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.rule_outlined, size: 18, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(w.message, style: theme.textTheme.bodySmall),
+                ),
+              ],
+            ),
+          ),
+          if (suggested != null && onApplySuggestion != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 6),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => onApplySuggestion!(suggested),
+                  icon: const Icon(Icons.auto_fix_high_outlined, size: 18),
+                  label: Text('Correggi in ${_fmt(suggested)}'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(BuildContext context) {
     final theme = Theme.of(context);
     final palette = AppTheme.paletteOf(context);
     final reference = analyte.reference.label;
@@ -571,9 +727,12 @@ class _AnalyteTile extends StatelessWidget {
                 ? _fmt(analyte.value!)
                 : (analyte.rawValue ?? '—'),
             style: theme.textTheme.titleSmall?.copyWith(
-              color: analyte.flag == ValueFlag.normal
-                  ? null
-                  : palette.of(analyte.flag),
+              color: warning != null
+                  ? theme.colorScheme.tertiary
+                  : (analyte.flag == ValueFlag.normal
+                      ? null
+                      : palette.of(analyte.flag)),
+              fontWeight: warning != null ? FontWeight.w700 : null,
             ),
           ),
           if (analyte.unit.isNotEmpty) ...[

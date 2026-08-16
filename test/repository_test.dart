@@ -404,4 +404,108 @@ void main() {
       expect(table.dates, isEmpty);
     });
   }, skip: hasSamples ? false : 'cartella esempi/ non presente');
+
+  // Non dipende dai referti reali: le misure si costruiscono a mano, così il
+  // gruppo resta verificabile anche senza la cartella esempi/.
+  group('correzione di una misura archiviata', () {
+    Future<int> saveTwo(int patientId) async {
+      return reports.save(
+        patientId: patientId,
+        examDate: DateTime(2026, 2, 3),
+        sourceKind: SourceKind.image,
+        analytes: [
+          const ParsedAnalyte(
+            rawName: 'Ematocrito',
+            canonicalKey: 'ematocrito|%',
+            displayName: 'Ematocrito',
+            unit: '%',
+            reference: ReferenceRange(
+              kind: ReferenceKind.range,
+              raw: '40 - 52',
+              low: 40,
+              high: 52,
+            ),
+            value: 472, // la virgola persa in lettura
+          ),
+          const ParsedAnalyte(
+            rawName: 'Emoglobina',
+            canonicalKey: 'emoglobina|g/dL',
+            displayName: 'Emoglobina',
+            unit: 'g/dL',
+            reference: ReferenceRange.none(),
+            value: 15.1,
+          ),
+        ],
+      );
+    }
+
+    test('correggere il valore aggiorna la serie storica', () async {
+      final patientId = await patients.create(fullName: 'Paziente Prova');
+      await saveTwo(patientId);
+
+      var table = await series.loadTable(patientId);
+      final sbagliata =
+          table.series.firstWhere((s) => s.displayName == 'Ematocrito');
+      expect(sbagliata.points.single.value, 472);
+
+      await series.updateMeasurementValue(
+        measurementId: sbagliata.points.single.measurementId,
+        value: 47.2,
+      );
+
+      table = await series.loadTable(patientId);
+      final corretta =
+          table.series.firstWhere((s) => s.displayName == 'Ematocrito');
+      expect(corretta.points.single.value, 47.2);
+      expect(corretta.points.single.refLow, 40,
+          reason: 'il riferimento del referto originale non va perso');
+    });
+
+    test('il valore corretto risulta rivisto', () async {
+      final patientId = await patients.create(fullName: 'Paziente Prova');
+      await saveTwo(patientId);
+      final table = await series.loadTable(patientId);
+      final punto = table.series
+          .firstWhere((s) => s.displayName == 'Ematocrito')
+          .points
+          .single;
+
+      await series.updateMeasurementValue(
+        measurementId: punto.measurementId,
+        value: 47.2,
+      );
+
+      final row = await (db.select(db.measurements)
+            ..where((m) => m.id.equals(punto.measurementId)))
+          .getSingle();
+      expect(row.reviewed, isTrue,
+          reason: 'distingue un valore corretto a mano da uno accettato '
+              'così come estratto');
+    });
+
+    test('eliminare una misura lascia intatte le altre del referto', () async {
+      final patientId = await patients.create(fullName: 'Paziente Prova');
+      final reportId = await saveTwo(patientId);
+
+      var table = await series.loadTable(patientId);
+      final punto = table.series
+          .firstWhere((s) => s.displayName == 'Ematocrito')
+          .points
+          .single;
+
+      await series.deleteMeasurement(punto.measurementId);
+
+      table = await series.loadTable(patientId);
+      expect(
+        table.series.where((s) => s.displayName == 'Ematocrito'),
+        isEmpty,
+      );
+      expect(
+        table.series.where((s) => s.displayName == 'Emoglobina'),
+        hasLength(1),
+        reason: 'si elimina una misura, non il referto',
+      );
+      expect(await reports.measurementsOf(reportId), hasLength(1));
+    });
+  });
 }

@@ -174,6 +174,52 @@ Due scelte non ovvie:
   con obiettivo `<190` non viene marcato come patologico: è un obiettivo, non
   un intervallo di riferimento di laboratorio.
 
+### Valori implausibili
+
+Un ematocrito archiviato come `472 %` con riferimento `40 - 52` — cioè `47,2`
+letto senza la virgola — ha attraversato la revisione senza che nessuno se ne
+accorgesse, e mesi dopo restava solo un picco inspiegabile che schiacciava la
+scala del grafico. Da lì nasce il controllo in `plausibility.dart`.
+
+**Il criterio non è la distanza dall'intervallo**, ed è la scelta di fondo.
+PCR, ferritina, D-dimero e transaminasi superano abitualmente il limite di
+dieci o cinquanta volte con valori veri, in sepsi, sovraccarico marziale ed
+epatite. Un avviso tarato sulla distanza suonerebbe proprio sui referti più
+gravi, e chi lo vede gridare al lupo ogni volta smette di leggerlo — restando
+indifeso il giorno in cui l'errore c'è davvero.
+
+Si riconosce quindi la **forma dell'errore di acquisizione**, con tre regole
+ad alta precisione:
+
+| Regola | Condizione | Esempio |
+|---|---|---|
+| Virgola persa | spostandola di una cifra il valore rientra ben dentro l'intervallo | `472` → `47,2` |
+| Percentuale impossibile | oltre il 100 % dove il riferimento si ferma prima | `716 %` |
+| Segno impossibile | negativo dove il riferimento parte da zero | trattino letto come meno |
+
+La prima regola si applica **solo agli analiti omeostatici**, marcati nel
+catalogo: quelli che l'organismo tiene entro un margine stretto perché fuori
+di lì non si sopravvive (sodio, ematocrito, emoglobina, elettroliti). Per la
+ferritina o le transaminasi non si applica mai. Il criterio per aggiungere una
+voce è che un valore dieci volte oltre il riferimento sia *incompatibile con
+la vita*, non semplicemente raro o grave; nel dubbio si lascia stare.
+
+Due dettagli che i test verificano perché sembravano innocui e non lo erano:
+
+- Lo spostamento richiede **entrambi i limiti**. Con un solo estremo (`< 5`
+  per la PCR) una PCR di 40 diviso dieci finisce sotto il limite, e sarebbe
+  segnalata come errore pur essendo un'infiammazione vera.
+- Il valore spostato deve cadere **al centro** dell'intervallo, non appoggiato
+  a un estremo. Senza questo margine, leucociti `100` in una leucemia
+  diventano `10,0` che è esattamente il limite superiore, e piastrine `1500`
+  in una trombocitosi diventano `150` che è esattamente quello inferiore.
+
+L'avviso non blocca il salvataggio — esistono valori legittimamente estremi, e
+un blocco costringerebbe a falsificare il dato per aggirarlo — ma passarci
+sopra richiede una conferma esplicita. Lo stesso controllo si applica a quanto
+è già in archivio: in tabella il valore sospetto è sottolineato e toccandolo
+si corregge o si elimina la singola misura, senza reimportare il referto.
+
 **Data del prelievo.** Si preferisce sempre la data del prelievo a quella di
 produzione del referto: possono differire di giorni e usare la seconda
 sfalserebbe l'asse temporale. Quando il documento non la contiene, la

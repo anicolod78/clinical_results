@@ -192,6 +192,34 @@ class SeriesRepository {
     );
   }
 
+  /// Corregge il valore di una misura già archiviata.
+  ///
+  /// Serve quando un errore di lettura è sfuggito alla revisione: reimportare
+  /// il referto per una cifra sbagliata significherebbe rifare tutto il
+  /// percorso e rischiare di duplicare il prelievo. La misura resta la stessa
+  /// riga, quindi conserva il collegamento al referto di origine e il suo
+  /// intervallo di riferimento, e viene marcata come rivista.
+  Future<void> updateMeasurementValue({
+    required int measurementId,
+    required double? value,
+  }) async {
+    await (_db.update(_db.measurements)
+          ..where((m) => m.id.equals(measurementId)))
+        .write(
+      MeasurementsCompanion(
+        value: Value(value),
+        reviewed: const Value(true),
+      ),
+    );
+  }
+
+  /// Elimina una singola misura, lasciando intatto il resto del referto.
+  Future<void> deleteMeasurement(int measurementId) async {
+    await (_db.delete(_db.measurements)
+          ..where((m) => m.id.equals(measurementId)))
+        .go();
+  }
+
   /// Annulla un'unione: le due serie tornano separate.
   Future<void> undoMerge(String fromKey) async {
     await (_db.delete(_db.analyteAliases)

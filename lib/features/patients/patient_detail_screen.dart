@@ -14,6 +14,7 @@ import '../charts/series_picker.dart';
 import '../charts/trend_chart.dart';
 import '../import/import_flow.dart';
 import '../parsing/models.dart';
+import '../results/measurement_editor.dart';
 import '../results/merge_series_screen.dart';
 import '../results/results_table_view.dart';
 
@@ -120,7 +121,16 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen>
             children: [
               data.isEmpty
                   ? const _NoResults()
-                  : ResultsTableView(table: data, onSelectSeries: _showSeries),
+                  : ResultsTableView(
+                      table: data,
+                      onSelectSeries: _showSeries,
+                      onCorrectPoint: (series, point) => showMeasurementEditor(
+                        context: context,
+                        ref: ref,
+                        series: series,
+                        point: point,
+                      ),
+                    ),
               _TrendsTab(
                 table: data,
                 selectedKey: _selectedKey,

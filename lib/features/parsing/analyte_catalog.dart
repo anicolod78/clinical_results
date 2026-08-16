@@ -15,6 +15,7 @@ class AnalyteDefinition {
     required this.synonyms,
     this.group = 'Altro',
     this.preferredUnit,
+    this.homeostatic = false,
   });
 
   /// Chiave interna, minuscola e senza accenti.
@@ -30,6 +31,22 @@ class AnalyteDefinition {
   final String group;
 
   final String? preferredUnit;
+
+  /// Se l'organismo mantiene questo valore entro un margine stretto.
+  ///
+  /// Serve a distinguere un errore di lettura da un risultato realmente
+  /// alterato, e la distinzione non si può fare guardando i numeri. Il sodio
+  /// sta fra 135 e 145 perché fuori da lì non si sopravvive: un 1400 è
+  /// necessariamente una virgola persa. La ferritina invece supera di dieci
+  /// volte il limite in un sovraccarico marziale, le transaminasi in
+  /// un'epatite, la PCR in una sepsi — e sono proprio i referti in cui un
+  /// avviso sbagliato farebbe più danno, perché insegnerebbe a ignorarlo.
+  ///
+  /// Il criterio per aggiungere una voce: marcare `true` solo se un valore
+  /// dieci volte oltre il riferimento sarebbe incompatibile con la vita, non
+  /// semplicemente raro o grave. Nel dubbio si lascia `false`, e l'analita non
+  /// riceve alcun controllo automatico.
+  final bool homeostatic;
 }
 
 /// Prefissi di matrice biologica usati dai laboratori italiani.
@@ -70,6 +87,7 @@ class AnalyteCatalog {
       synonyms: ['globuli rossi', 'rbc', 'gr'],
       group: 'Emocromo',
       preferredUnit: 'x10^12/L',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'emoglobina',
@@ -77,6 +95,7 @@ class AnalyteCatalog {
       synonyms: ['hb', 'hgb'],
       group: 'Emocromo',
       preferredUnit: 'g/dL',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'ematocrito',
@@ -84,6 +103,7 @@ class AnalyteCatalog {
       synonyms: ['hct', 'ht'],
       group: 'Emocromo',
       preferredUnit: '%',
+      homeostatic: true,
     ),
     // I referti alternano sigle e denominazioni per esteso: senza i sinonimi
     // lo stesso esame formerebbe due serie storiche separate a seconda di
@@ -94,6 +114,7 @@ class AnalyteCatalog {
       synonyms: ['volume corpuscolare medio', 'volume cellulare medio'],
       group: 'Emocromo',
       preferredUnit: 'fL',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'mch',
@@ -101,6 +122,7 @@ class AnalyteCatalog {
       synonyms: ['emoglobina corpuscolare media', 'contenuto emoglobinico medio'],
       group: 'Emocromo',
       preferredUnit: 'pg',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'mchc',
@@ -111,6 +133,7 @@ class AnalyteCatalog {
       ],
       group: 'Emocromo',
       preferredUnit: 'g/dL',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'rdw',
@@ -122,6 +145,7 @@ class AnalyteCatalog {
       ],
       group: 'Emocromo',
       preferredUnit: '%',
+      homeostatic: true,
     ),
     AnalyteDefinition(
       canonicalName: 'piastrine',
@@ -130,7 +154,7 @@ class AnalyteCatalog {
       group: 'Emocromo',
       preferredUnit: 'x10^9/L',
     ),
-    AnalyteDefinition(canonicalName: 'mpv', displayName: 'MPV', synonyms: [], group: 'Emocromo', preferredUnit: 'fL'),
+    AnalyteDefinition(canonicalName: 'mpv', displayName: 'MPV', synonyms: [], group: 'Emocromo', preferredUnit: 'fL', homeostatic: true),
 
     // --- Formula leucocitaria ---
     //
@@ -205,7 +229,7 @@ class AnalyteCatalog {
     AnalyteDefinition(canonicalName: 'glucosio', displayName: 'Glucosio (glicemia)', synonyms: ['glicemia'], group: 'Metabolismo', preferredUnit: 'mg/dL'),
     AnalyteDefinition(canonicalName: 'emoglobina glicata', displayName: 'Emoglobina glicata (HbA1c)', synonyms: ['hba1c', 'glicata'], group: 'Metabolismo', preferredUnit: 'mmol/mol'),
     AnalyteDefinition(canonicalName: 'acido urico', displayName: 'Acido urico', synonyms: ['uricemia'], group: 'Metabolismo', preferredUnit: 'mg/dL'),
-    AnalyteDefinition(canonicalName: 'proteine totali', displayName: 'Proteine totali', synonyms: [], group: 'Metabolismo', preferredUnit: 'g/L'),
+    AnalyteDefinition(canonicalName: 'proteine totali', displayName: 'Proteine totali', synonyms: [], group: 'Metabolismo', preferredUnit: 'g/L', homeostatic: true),
 
     // --- Tiroide ---
     AnalyteDefinition(canonicalName: 'tsh', displayName: 'TSH', synonyms: ['tsh reflex'], group: 'Tiroide'),
@@ -215,15 +239,15 @@ class AnalyteCatalog {
     // --- Marziale / vitamine ---
     AnalyteDefinition(canonicalName: 'ferro', displayName: 'Ferro (sideremia)', synonyms: ['sideremia'], group: 'Marziale'),
     AnalyteDefinition(canonicalName: 'ferritina', displayName: 'Ferritina', synonyms: [], group: 'Marziale'),
-    AnalyteDefinition(canonicalName: 'transferrina', displayName: 'Transferrina', synonyms: [], group: 'Marziale'),
+    AnalyteDefinition(canonicalName: 'transferrina', displayName: 'Transferrina', synonyms: [], group: 'Marziale', homeostatic: true),
     AnalyteDefinition(canonicalName: 'vitamina d', displayName: 'Vitamina D (25-OH)', synonyms: ['25-oh vitamina d', 'vitamina d 25 oh', 'colecalciferolo'], group: 'Vitamine'),
     AnalyteDefinition(canonicalName: 'vitamina b12', displayName: 'Vitamina B12', synonyms: ['b12', 'cobalamina'], group: 'Vitamine'),
     AnalyteDefinition(canonicalName: 'folati', displayName: 'Folati', synonyms: ['acido folico'], group: 'Vitamine'),
 
     // --- Elettroliti ---
-    AnalyteDefinition(canonicalName: 'sodio', displayName: 'Sodio', synonyms: ['na'], group: 'Elettroliti'),
-    AnalyteDefinition(canonicalName: 'potassio', displayName: 'Potassio', synonyms: ['k'], group: 'Elettroliti'),
-    AnalyteDefinition(canonicalName: 'calcio', displayName: 'Calcio', synonyms: ['ca'], group: 'Elettroliti'),
+    AnalyteDefinition(canonicalName: 'sodio', displayName: 'Sodio', synonyms: ['na'], group: 'Elettroliti', homeostatic: true),
+    AnalyteDefinition(canonicalName: 'potassio', displayName: 'Potassio', synonyms: ['k'], group: 'Elettroliti', homeostatic: true),
+    AnalyteDefinition(canonicalName: 'calcio', displayName: 'Calcio', synonyms: ['ca'], group: 'Elettroliti', homeostatic: true),
   ];
 
   static final Map<String, AnalyteDefinition> _index = _buildIndex();
@@ -274,6 +298,12 @@ class AnalyteCatalog {
   }
 
   static String groupFor(String rawName) => lookup(rawName)?.group ?? 'Altro';
+
+  /// Un analita sconosciuto al catalogo non è mai considerato omeostatico:
+  /// senza sapere di che esame si tratti non si può affermare che un valore
+  /// sia impossibile.
+  static bool isHomeostatic(String rawName) =>
+      lookup(rawName)?.homeostatic ?? false;
 
   /// Ripara un'unità troncata dal riconoscimento ottico.
   ///
